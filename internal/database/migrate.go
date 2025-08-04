@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/squ1ky/talkify/internal/config"
 )
 
 // MigrationManager handles database migrations
@@ -14,7 +13,7 @@ type MigrationManager struct {
 }
 
 // NewMigrationManager creates a new migration manager
-func NewMigrationManager(db *DB, cfg *config.DatabaseConfig) (*MigrationManager, error) {
+func NewMigrationManager(db *DB) (*MigrationManager, error) {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create postgres driver: %v", err)
