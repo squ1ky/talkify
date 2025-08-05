@@ -12,6 +12,8 @@ import (
 func SetupRouter(cfgSecret string, userService *services.UserService, messageService *services.MessageService) *gin.Engine {
 	r := gin.Default()
 
+	jwtService := services.NewJWTService(cfgSecret)
+
 	apiV1 := r.Group("/api/v1")
 
 	// Public routes
@@ -54,11 +56,17 @@ func SetupRouter(cfgSecret string, userService *services.UserService, messageSer
 			return
 		}
 
-		// TODO: add jwt generation here
+		token, err := jwtService.GenerateToken(user.ID, user.Username)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "failed to generate token",
+			})
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"message": "login success",
 			"user_id": user.ID,
+			"token":   token,
 		})
 	})
 
