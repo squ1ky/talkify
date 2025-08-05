@@ -78,7 +78,7 @@ func (mr *MessageRepository) GetConversationHistory(userID1, userID2 int, limit,
 		INNER JOIN users r ON m.receiver_id = r.id
 		WHERE
 			(m.sender_id = $1 AND m.receiver_id = $2) OR
-			(m.sender_id = $2 AND m.receiver_id = $1
+			(m.sender_id = $2 AND m.receiver_id = $1)
 		ORDER BY m.created_at DESC
 		LIMIT $3 OFFSET $4`
 
@@ -167,25 +167,19 @@ func (mr *MessageRepository) GetUserMessages(userID int, limit, offset int) ([]m
 // GetRecentConversations returns list of users with recent conversations
 func (mr *MessageRepository) GetRecentConversations(userID int, limit int) ([]models.UserResponse, error) {
 	query := `
-		SELECT DISTINCT
-			CASE
-				WHEN m.sender_id = $1 THEN u2.id
-				ELSE u1.id
-			END as user_id,
-			CASE
-				WHEN m.sender_id = $1 THEN u2.username
-				ELSE u1.username
-			END as username,
-			CASE
-				WHEN m.sender_id = $1 THEN u2.created_at
-				ELSE u1.created_at
-			END as user_created_at
-		FROM messages m
-		INNER JOIN users u1 on m.sender_id = u1.id
-		INNER JOIN users u2 ON m.receiver_id = u2.id
-		WHERE m.sender_id = $1 OR m.receiver_id = $1
-		ORDER BY m.created_at DESC
-		LIMIT $2`
+       WITH recent_conversations AS (
+          SELECT DISTINCT
+             CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END as other_user_id,
+             MAX(m.created_at) as last_message_time
+          FROM messages m
+          WHERE m.sender_id = $1 OR m.receiver_id = $1
+          GROUP BY other_user_id
+       )
+       SELECT u.id, u.username, u.created_at
+       FROM recent_conversations rc
+       INNER JOIN users u ON rc.other_user_id = u.id
+       ORDER BY rc.last_message_time DESC
+       LIMIT $2`
 
 	rows, err := mr.db.Query(query, userID, limit)
 	if err != nil {
@@ -196,7 +190,7 @@ func (mr *MessageRepository) GetRecentConversations(userID int, limit int) ([]mo
 	var users []models.UserResponse
 	for rows.Next() {
 		var user models.UserResponse
-		err := rows.Scan(&user.ID, user.Username, &user.CreatedAt)
+		err := rows.Scan(&user.ID, &user.Username, &user.CreatedAt)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan conversation row: %w", err)
