@@ -70,7 +70,7 @@ func (mr *MessageRepository) GetByID(id int) (*models.Message, error) {
 func (mr *MessageRepository) GetConversationHistory(userID1, userID2 int, limit, offset int) ([]models.MessageWithUserResponse, error) {
 	query := `
 		SELECT
-			m.id, m.content, m.created_at
+			m.id, m.content, m.created_at,
 			s.id as sender_id, s.username as sender_username, s.created_at as sender_created_at,
 			r.id as receiver_id, r.username as receiver_username, r.created_at as receiver_created_at
 		FROM messages m
@@ -120,7 +120,7 @@ func (mr *MessageRepository) GetConversationHistory(userID1, userID2 int, limit,
 func (mr *MessageRepository) GetUserMessages(userID int, limit, offset int) ([]models.MessageWithUserResponse, error) {
 	query := `
 		SELECT
-			m.id, m.content, m.created_at
+			m.id, m.content, m.created_at,
 			s.id as sender_id, s.username as sender_username, s.created_at as sender_created_at,
 			r.id as receiver_id, r.username as receiver_username, r.created_at as receiver_created_at
 		FROM messages m
@@ -171,7 +171,7 @@ func (mr *MessageRepository) GetRecentConversations(userID int, limit int) ([]mo
 			CASE
 				WHEN m.sender_id = $1 THEN u2.id
 				ELSE u1.id
-			END as user_id
+			END as user_id,
 			CASE
 				WHEN m.sender_id = $1 THEN u2.username
 				ELSE u1.username
@@ -184,7 +184,7 @@ func (mr *MessageRepository) GetRecentConversations(userID int, limit int) ([]mo
 		INNER JOIN users u1 on m.sender_id = u1.id
 		INNER JOIN users u2 ON m.receiver_id = u2.id
 		WHERE m.sender_id = $1 OR m.receiver_id = $1
-		ORDER BY MAX(m.created_at) DESC
+		ORDER BY m.created_at DESC
 		LIMIT $2`
 
 	rows, err := mr.db.Query(query, userID, limit)
@@ -222,7 +222,7 @@ func (mr *MessageRepository) CountConversationMessages(userID1, userID2 int) (in
 			(sender_id = $1 AND receiver_id = $2) OR
 			(sender_id = $2 AND receiver_id = $1)`
 
-	err := mr.db.QueryRow(query, userID1, userID2, userID1).Scan(&count)
+	err := mr.db.QueryRow(query, userID1, userID2).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count conversation messages: %w", err)
 	}
@@ -234,7 +234,7 @@ func (mr *MessageRepository) CountConversationMessages(userID1, userID2 int) (in
 func (mr *MessageRepository) GetMessagesSince(userID int, since time.Time) ([]models.MessageWithUserResponse, error) {
 	query := `
 		SELECT
-			m.id, m.content, m.created_at
+			m.id, m.content, m.created_at,
 			s.id as sender_id, s.username as sender_username, s.created_at as sender_created_at,
 			r.id as receiver_id, r.username as receiver_username, r.created_at as receiver_created_at
 		FROM messages m
