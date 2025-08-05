@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"github.com/joho/godotenv"
@@ -27,6 +27,9 @@ func main() {
 	defer db.Close()
 
 	migrationManager, err := database.NewMigrationManager(db)
+	if err != nil {
+		log.Fatalf("failed to create migration manager: %v", err)
+	}
 	if err := migrationManager.Up(); err != nil {
 		log.Fatalf("Failed to create migration manager: %v", err)
 	}

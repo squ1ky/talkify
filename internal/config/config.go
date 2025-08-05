@@ -49,7 +49,7 @@ type KafkaConfig struct {
 func Load() (*Config, error) {
 	config := &Config{
 		Server: ServerConfig{
-			Host:         getEnv("SERVER_HOST", "localhost"),
+			Host:         getEnv("SERVER_HOST", "0.0.0.0"),
 			Port:         getEnv("SERVER_PORT", "8080"),
 			ReadTimeout:  parseDuration(getEnv("SERVER_READ_TIMEOUT", "10s")),
 			WriteTimeout: parseDuration(getEnv("SERVER_WRITE_TIMEOUT", "10s")),

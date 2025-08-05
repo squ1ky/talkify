@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 // MigrationManager handles database migrations
@@ -14,6 +15,10 @@ type MigrationManager struct {
 
 // NewMigrationManager creates a new migration manager
 func NewMigrationManager(db *DB) (*MigrationManager, error) {
+	if db == nil || db.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create postgres driver: %v", err)
